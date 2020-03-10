@@ -293,8 +293,8 @@
                         </li>
                     </ul>
                     <div class="top-pagination">
-                        <span>共 <i style="color: #222;">7600+</i> 商品</span>
-                        <span><i style="color: red;">2</i>/123</span>
+                        <span>共 <i style="color: #222;">{{total}}+</i> 商品</span>
+                        <span><i style="color: red;">{{search.page}}</i>/{{totalPage}}</span>
                         <a class="btn-arrow" href="#" style="display: inline-block">&lt;</a>
                         <a class="btn-arrow" href="#" style="display: inline-block">&gt;</a>
                     </div>
@@ -344,29 +344,17 @@
                 <div class="sui-pagination pagination-large">
                     <ul>
                         <li class="prev disabled">
-                            <a href="#">«上一页</a>
+                            <a href="#" @click.prevent="prePage">«上一页</a>
                         </li>
-                        <li class="active">
-                            <a href="#">1</a>
+                        <li class="{active: index(i)===search.page}" v-for="i in Math.min(5, totalPage)" :key="i">
+                            <a href="#" v-text="index(i)"></a>
                         </li>
-                        <li>
-                            <a href="#">2</a>
-                        </li>
-                        <li>
-                            <a href="#">3</a>
-                        </li>
-                        <li>
-                            <a href="#">4</a>
-                        </li>
-                        <li>
-                            <a href="#">5</a>
-                        </li>
-                        <li class="dotted"><span>...</span></li>
+                        <li class="dotted" v-show="search.page + 2 < totalPage && totalPage > 5"><span>...</span></li>
                         <li class="next">
-                            <a href="#">下一页»</a>
+                            <a href="#" @click.prevent="nextPage">下一页»</a>
                         </li>
                     </ul>
-                    <div><span>共10页&nbsp;</span><span>
+                    <div><span>共{{totalPage}}页&nbsp;</span><span>
       到第
       <input type="text" class="page-num">
       页 <button class="page-confirm" onclick="alert(1)">确定</button></span></div>
@@ -474,14 +462,24 @@
         },
         created(){
             consnt search = ly.parse(location.search.substring(1));
+            search.page = search.page || 1;
             this.search = search;
             this.loadData();
+        },
+        watch:{
+            search: {
+             deep: true,
+             handler(){
+                 this.loadData();
+             }
+            }
         },
         methods:{
             loadData(){
                 ly.http.post("/search/page", this.search).then(resp=> {
                     console.log(resp);
                     this.total = resp.data.total;
+                    this.totalPage = resp.data.totalPage;
                     //string 2 json
                     resp.data.items.forEach(goods => {
                         goods.skus = JSON.parse(goods.skus);
@@ -493,6 +491,23 @@
                 }).catch(error => {
 
                 })
+            },
+            index(i){
+                if(this.search.page<=3 || this.search.page < 5){
+                    return i;
+                }else if(this.search.page >=this.total/this.totalPage -2){
+                    return this.search.page - 5 + i;
+                } else {
+                    return i + this.search.page - 3;
+                }
+            },
+            prePage(){
+                if(this.search.page > 1)
+                    this.page--;
+            },
+            nextPage(){
+                if(this.search.page < this.search.totalPage)
+                    this.page++;
             }
         },
         components:{
